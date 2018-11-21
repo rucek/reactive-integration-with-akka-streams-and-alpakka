@@ -5,10 +5,14 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
+import akka.stream.Graph;
+import akka.stream.SinkShape;
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.cassandra.javadsl.CassandraSink;
 import akka.stream.alpakka.file.javadsl.FileTailSource;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.GraphDSL;
+import akka.stream.javadsl.Partition;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -68,4 +72,16 @@ public class CsvImporter {
             .map(m -> m.value)
             .to(cassandraSink);
     }
+
+    private final Graph<SinkShape<Model>, NotUsed> partitioningSink =
+        GraphDSL.create(builder -> {
+            var partition = builder.add(Partition.create(Model.class, 2, m -> m.id % 2));
+            var cassandra = builder.add(cassandraSink());
+            var http = builder.add(httpSink());
+
+            builder.from(partition.out(0)).to(cassandra);
+            builder.from(partition.out(1)).to(http);
+
+            return SinkShape.of(partition.in());
+        });
 }
