@@ -90,4 +90,8 @@ public class CsvImporter {
             .via(toModel)
             .runWith(partitioningSink, materializer);
     }
+
+    public static void main(String[] args) {
+        new CsvImporter().run();
+    }
 }
