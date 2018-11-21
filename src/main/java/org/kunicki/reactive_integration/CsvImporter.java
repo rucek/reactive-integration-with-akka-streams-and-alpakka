@@ -1,11 +1,15 @@
 package org.kunicki.reactive_integration;
 
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.file.javadsl.FileTailSource;
+import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 
 public class CsvImporter {
@@ -26,4 +30,6 @@ public class CsvImporter {
 
     private final ActorSystem actorSystem = ActorSystem.create();
     private final ActorMaterializer materializer = ActorMaterializer.create(actorSystem);
+
+    private final Source<ByteString, NotUsed> fileBytes = FileTailSource.create(DATA_PATH, 100, 0, Duration.ofSeconds(1));
 }
