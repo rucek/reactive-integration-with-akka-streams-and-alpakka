@@ -84,4 +84,10 @@ public class CsvImporter {
 
             return SinkShape.of(partition.in());
         });
+
+    private void run() {
+        fileBytes
+            .via(toModel)
+            .runWith(partitioningSink, materializer);
+    }
 }
