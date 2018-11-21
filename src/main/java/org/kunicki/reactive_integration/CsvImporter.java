@@ -2,10 +2,13 @@ package org.kunicki.reactive_integration;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.file.javadsl.FileTailSource;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
@@ -39,4 +42,13 @@ public class CsvImporter {
         CsvParsing.lineScanner()
             .map(List::copyOf)
             .map(Model::new);
+
+    private Sink<Model, NotUsed> httpSink() {
+        var httpConnectionFlow = Http.get(actorSystem).outgoingConnection("localhost:9999");
+
+        return Flow.of(Model.class)
+            .map(m -> HttpRequest.POST("/echo").withEntity(m.value))
+            .via(httpConnectionFlow)
+            .to(Sink.ignore());
+    }
 }
