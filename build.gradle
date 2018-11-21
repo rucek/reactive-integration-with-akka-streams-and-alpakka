@@ -1,0 +1,24 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+def alpakkaVersion = '1.0-M1'
+
+dependencies {
+    compile "com.lightbend.akka:akka-stream-alpakka-file_2.12:${alpakkaVersion}"
+    compile "com.lightbend.akka:akka-stream-alpakka-csv_2.12:${alpakkaVersion}"
+    compile "com.lightbend.akka:akka-stream-alpakka-cassandra_2.12:${alpakkaVersion}"
+    compile 'com.typesafe.akka:akka-http_2.12:10.1.5'
+}
+
+task httpServer(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.reactive_integration.HttpServer'
+}
+
+task csvImporter(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'org.kunicki.reactive_integration.CsvImporter'
+}
