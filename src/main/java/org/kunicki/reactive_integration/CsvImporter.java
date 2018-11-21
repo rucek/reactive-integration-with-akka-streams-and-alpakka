@@ -6,16 +6,21 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.csv.javadsl.CsvParsing;
+import akka.stream.alpakka.cassandra.javadsl.CassandraSink;
 import akka.stream.alpakka.file.javadsl.FileTailSource;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.BiFunction;
 
 public class CsvImporter {
 
@@ -50,5 +55,17 @@ public class CsvImporter {
             .map(m -> HttpRequest.POST("/echo").withEntity(m.value))
             .via(httpConnectionFlow)
             .to(Sink.ignore());
+    }
+
+    private Sink<Model, NotUsed> cassandraSink() {
+        var session = Cluster.builder().addContactPoint("localhost").withPort(9042).build().connect();
+        var preparedStatement = session.prepare(INSERT_QUERY);
+        BiFunction<String, PreparedStatement, BoundStatement> statementBinder = (String value, PreparedStatement statement) -> statement.bind(value);
+
+        var cassandraSink = CassandraSink.create(1, preparedStatement, statementBinder, session);
+
+        return Flow.of(Model.class)
+            .map(m -> m.value)
+            .to(cassandraSink);
     }
 }
