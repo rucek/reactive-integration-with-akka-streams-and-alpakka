@@ -3,7 +3,9 @@ package org.kunicki.reactive_integration;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.csv.javadsl.CsvParsing;
 import akka.stream.alpakka.file.javadsl.FileTailSource;
+import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 
@@ -32,4 +34,9 @@ public class CsvImporter {
     private final ActorMaterializer materializer = ActorMaterializer.create(actorSystem);
 
     private final Source<ByteString, NotUsed> fileBytes = FileTailSource.create(DATA_PATH, 100, 0, Duration.ofSeconds(1));
+
+    private final Flow<ByteString, Model, NotUsed> toModel =
+        CsvParsing.lineScanner()
+            .map(List::copyOf)
+            .map(Model::new);
 }
